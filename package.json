@@ -1,0 +1,29 @@
+{
+  "name": "jsmpeg-stream-server",
+  "version": "1.0.0",
+  "description": "`npm install`",
+  "main": "app.js",
+  "dependencies": {
+    "expres": "^0.0.5",
+    "express": "^4.16.3",
+    "nouislider": "^11.1.0",
+    "screenfull": "^3.3.2",
+    "vue": "^2.5.16",
+    "vuejs": "^3.0.1",
+    "ws": "^5.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tmyl123/Jsmpeg-stream-server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tmyl123/Jsmpeg-stream-server/issues"
+  },
+  "homepage": "https://github.com/tmyl123/Jsmpeg-stream-server#readme"
+}
