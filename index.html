@@ -19,26 +19,23 @@
 <body>
     <div id="main">
 			<b-container class="bv-example-row">
-							<!--
-					<b-row>
-						<b-col>App Name</b-col>
-						<b-col>Stream Name</b-col>
-					</b-row>
-          <b-row v-for="app in allStreamClient">
-						<b-col> {{ app.appName }} </b-col>
-						<b-col>
-							<b-row v-for="stream in app.streams">
-									{{ stream.streamName }}
-							</b-row>
-						</b-col>
-						<b-col>
-							<b-row v-for="stream in app.streams">
-									PLAYER HERE
-							</b-row>
-						</b-col>
-          </b-row>
-							-->
-       <b-table hover :items="allStreamClient"></b-table>
+       <b-table hover :fields="tablefields" :items="allStreamClient">
+			   <template slot="jsmplayer" slot-scope="data">
+           {{data.index + 1}}
+            <div :class="{'player': !isFullscreen, 'player-isfull': isFullscreen}" id="JSMplayer" @mouseover="onMouseShow" @mouseleave="onMouseHide">
+                <canvas :id='"video-canvas-" + data.index' :class="{'player-media': !isFullscreen, 'player-media-isfull': isFullscreen}" @click="clickActive">
+                </canvas>
+                <transition name="fade">
+                    <div class="player-UI" v-show="showUI && !isIdle">
+                        <i :class="{'fa fa-pause fa-2x': playing, 'fa fa-play fa-2x': !playing}" @click="togglePlay"></i>
+                        <i :class="{'fa fa-volume-up fa-2x': !isMute, 'fa fa-volume-off fa-2x': isMute}" @click="toggleVolume"></i>
+                        <div id="slider"></div>
+                        <i @click="screenFull" class="fa icon-fullscreen fa-2x"></i>
+                    </div>
+                </transition>
+            </div>
+         </template>
+			 </b-table>
      </b-container>
         <div :class="{'player': !isFullscreen, 'player-isfull': isFullscreen}" id="JSMplayer" @mouseover="onMouseShow" @mouseleave="onMouseHide">
             <canvas id="video-canvas" :class="{'player-media': !isFullscreen, 'player-media-isfull': isFullscreen}" @click="clickActive">
@@ -70,7 +67,9 @@ var vue = new Vue({
         isFullscreen: false,
         isMute: false,
         isIdle: false,
-				allStreamClient: []
+				allStreamClient: [],
+				tablefields: ["srcAddr", "streamUrl", "appName", "streamName", "jsmplayer"],
+				timeoutID: ""
     },
     mounted() {
       var ws = new WebSocket('ws://' + document.location.hostname + ':8082');
@@ -96,48 +95,42 @@ var vue = new Vue({
             console.log("Yor are not mac user!")
             this.jsmegInstant()
         };
+
         player.pause();
         screenfull.onchange(function() {
             vue.$data.isFullscreen = !vue.$data.isFullscreen;
         });
-        var timeoutID;
 
-        function setup() {
-            this.addEventListener("mousemove", resetTimer, false);
-            this.addEventListener("mousedown", resetTimer, false);
-            this.addEventListener("keypress", resetTimer, false);
-            this.addEventListener("DOMMouseScroll", resetTimer, false);
-            this.addEventListener("mousewheel", resetTimer, false);
-            this.addEventListener("touchmove", resetTimer, false);
-            this.addEventListener("MSPointerMove", resetTimer, false);
-
-            startTimer();
-        }
-        setup();
-
-        function startTimer() {
-            timeoutID = window.setTimeout(goInactive, 3000);
-        }
-
-        function resetTimer(e) {
-            window.clearTimeout(timeoutID);
-
-            goActive();
-        }
-
-        function goInactive() {
-            vue.$data.isIdle = true;
-        }
-
-        function goActive() {
-            vue.$data.isIdle = false;
-            startTimer();
-        }
-
+        this.setup();
     },
 
 
     methods: {
+				setup () {
+            this.$el.addEventListener("mousemove", this.resetTimer, false);
+            this.$el.addEventListener("mousedown", this.resetTimer, false);
+            this.$el.addEventListener("keypress", this.resetTimer, false);
+            this.$el.addEventListener("DOMMouseScroll", this.resetTimer, false);
+            this.$el.addEventListener("mousewheel", this.resetTimer, false);
+            this.$el.addEventListener("touchmove", this.resetTimer, false);
+            this.$el.addEventListener("MSPointerMove", this.resetTimer, false);
+
+            this.startTimer();
+				},
+				startTimer() {
+            this.timeoutID = window.setTimeout(this.goInactive, 3000);
+				},
+				resetTimer(e) {
+            window.clearTimeout(this.timeoutID);
+            this.goActive();
+				},
+				goActive() {
+            vue.$data.isIdle = false;
+            this.startTimer();
+				},
+				goInactive() {
+            vue.$data.isIdle = true;
+				},
         jsmegInstant() {
             var canvas = document.getElementById('video-canvas');
             var url = 'ws://' + document.location.hostname + ':8082/myapp/mystream';
