@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>JSMplayer</title>
+    <script type="text/javascript" src="jsmpeg.min.js"></script>
+    <script src="node_modules/vue/dist/vue.js"></script>
+    <script type="text/javascript" src="node_modules/screenfull/dist/screenfull.js"></script>
+    <script src="node_modules/nouislider/distribute/nouislider.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="node_modules/nouislider/distribute/nouislider.min.css">
+    <link rel="stylesheet" href="font-awesome-4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="font-awesome-3.2.1/css/font-awesome.min.css" />
+		<link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css"/>
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css"/>
+		<script src="//unpkg.com/babel-polyfill@latest/dist/polyfill.min.js"></script>
+    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+</head>
+
+<body>
+    <div id="main">
+			<b-container class="bv-example-row">
+							<!--
+					<b-row>
+						<b-col>App Name</b-col>
+						<b-col>Stream Name</b-col>
+					</b-row>
+          <b-row v-for="app in allStreamClient">
+						<b-col> {{ app.appName }} </b-col>
+						<b-col>
+							<b-row v-for="stream in app.streams">
+									{{ stream.streamName }}
+							</b-row>
+						</b-col>
+						<b-col>
+							<b-row v-for="stream in app.streams">
+									PLAYER HERE
+							</b-row>
+						</b-col>
+          </b-row>
+							-->
+       <b-table hover :items="allStreamClient"></b-table>
+     </b-container>
+        <div :class="{'player': !isFullscreen, 'player-isfull': isFullscreen}" id="JSMplayer" @mouseover="onMouseShow" @mouseleave="onMouseHide">
+            <canvas id="video-canvas" :class="{'player-media': !isFullscreen, 'player-media-isfull': isFullscreen}" @click="clickActive">
+            </canvas>
+            <transition name="fade">
+                <div class="player-UI" v-show="showUI && !isIdle">
+                    <i :class="{'fa fa-pause fa-2x': playing, 'fa fa-play fa-2x': !playing}" @click="togglePlay"></i>
+                    <i :class="{'fa fa-volume-up fa-2x': !isMute, 'fa fa-volume-off fa-2x': isMute}" @click="toggleVolume"></i>
+                    <div id="slider"></div>
+                    <i @click="screenFull" class="fa icon-fullscreen fa-2x"></i>
+                </div>
+            </transition>
+        </div>
+    </div>
+</body>
+
+<script>
+var vue = new Vue({
+    el: '#main',
+    data: {
+        slider: {
+            start: 2,
+            min: 0,
+            max: 10,
+            connect: [true, false]
+        },
+        playing: false,
+        showUI: true,
+        isFullscreen: false,
+        isMute: false,
+        isIdle: false,
+				allStreamClient: []
+    },
+    mounted() {
+      var ws = new WebSocket('ws://' + document.location.hostname + ':8082');
+      ws.onopen = function() {
+				ws.send({ eventName: "allstreamClient", eventMsg: "" });
+          console.log('open')
+      }
+      ws.onmessage = function(event) {
+      	if (typeof event.data == "string") {
+					var data = JSON.parse(event.data)
+					console.log(data)
+					if (data.eventName == "allstreamClient") {
+						console.log(data.eventMsg)
+						vue.$data.allStreamClient = data.eventMsg
+						console.log(vue.$data.allStreamClient)
+					}
+      	}
+      }
+        var isMac = navigator.userAgent.indexOf('Mac') >= 0;
+        if (isMac) {
+            this.jsmegInstant()
+        } else {
+            console.log("Yor are not mac user!")
+            this.jsmegInstant()
+        };
+        player.pause();
+        screenfull.onchange(function() {
+            vue.$data.isFullscreen = !vue.$data.isFullscreen;
+        });
+        var timeoutID;
+
+        function setup() {
+            this.addEventListener("mousemove", resetTimer, false);
+            this.addEventListener("mousedown", resetTimer, false);
+            this.addEventListener("keypress", resetTimer, false);
+            this.addEventListener("DOMMouseScroll", resetTimer, false);
+            this.addEventListener("mousewheel", resetTimer, false);
+            this.addEventListener("touchmove", resetTimer, false);
+            this.addEventListener("MSPointerMove", resetTimer, false);
+
+            startTimer();
+        }
+        setup();
+
+        function startTimer() {
+            timeoutID = window.setTimeout(goInactive, 3000);
+        }
+
+        function resetTimer(e) {
+            window.clearTimeout(timeoutID);
+
+            goActive();
+        }
+
+        function goInactive() {
+            vue.$data.isIdle = true;
+        }
+
+        function goActive() {
+            vue.$data.isIdle = false;
+            startTimer();
+        }
+
+    },
+
+
+    methods: {
+        jsmegInstant() {
+            var canvas = document.getElementById('video-canvas');
+            var url = 'ws://' + document.location.hostname + ':8082/myapp/mystream';
+            player = new JSMpeg.Player(url, {
+                canvas: canvas
+            });
+
+            var Slider = document.getElementById('slider');
+
+            noUiSlider.create(Slider, {
+                start: this.slider.start,
+                connect: [this.slider.connect[0], this.slider.connect[1]],
+                range: {
+                    'min': this.slider.min,
+                    'max': this.slider.max
+                }
+            });
+            Slider.noUiSlider.on('slide', function(values, handle) {
+                player.setVolume(values[handle]);
+                if (values[handle] > 0) {
+                    vue.$data.isMute = false;
+                } else {
+                    vue.$data.isMute = true;
+                }
+            });
+        },
+
+        togglePlay() {
+            if (!player.isPlaying) {
+                player.play();
+                this.playing = true
+          player.audioOut.unlock(function() {
+          //  alert("unlock IPHONE audio");
+          });
+            } else {
+                player.pause();
+                this.playing = false
+            }
+        },
+        toggleVolume() {
+            const currentVolume = slider.noUiSlider.get()
+            this.isMute = !this.isMute;
+            if (currentVolume != 0) {
+                slider.noUiSlider.set(0)
+            } else {
+                slider.noUiSlider.set(4)
+            }
+        },
+        onMouseShow() {
+            if (!this.isFullscreen) {
+                this.showUI = true;
+            }
+        },
+        onMouseHide() {
+            this.showUI = false;
+        },
+        screenFull() {
+            if (screenfull.enabled) {
+                screenfull.toggle(document.getElementById('JSMplayer'));
+            } else {
+                alert("Your browser not support fullscreen")
+            }
+        },
+        clickActive() {
+            if (this.showUI) {
+                this.togglePlay();
+            }
+            if (this.isFullscreen) {
+                this.showUI = true;
+            }
+
+        }
+    },
+	  sockets: {
+		  connect: function() {
+			  console.log('socket connect')
+			}
+		}
+
+});
+</script>
+
+<style>
+html,
+body {
+/*    background-color: #111; */
+    text-align: center;
+}
+
+
+/*canvas {
+    position: absolute;
+    z-index: 1
+}*/
+
+.player {
+    width: 640px;
+    height: 320px;
+    margin: auto;
+    border: 1px solid #000;
+    position: relative;
+}
+
+.player-media {
+    position: relative;
+    width: 640px;
+    height: 320px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid #000;
+}
+
+.player-UI {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    background-color:rgba(0, 0, 0, 0.5);
+    border-radius: 4%;
+    position: absolute;
+    bottom: 0;
+    z-index: 2;
+}
+
+.player-playbtn {
+    color: #A9A9A9;
+}
+
+#slider {
+    width: 300px;
+    height: 10px;
+    border-radius: 15px;
+    top: 12px;
+}
+
+
+/*very inportant*/
+.noUi-horizontal .noUi-handle {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  left: -7px;
+  top: -7px;
+  background-color: #fff;
+  border: none;
+}
+
+/* Styling;
+ */
+.noUi-background {
+  background: #D6D7D9;
+}
+
+.noUi-connect {
+  background: #345DBB;
+}
+
+
+.noUi-handle {
+  cursor: default;
+  -webkit-box-sizing: content-box !important;
+  -moz-box-sizing: content-box !important;
+  box-sizing: content-box !important;
+}
+
+.noUi-handle::before, .noUi-handle::after {
+  display: none;
+}
+
+/*.noUi-handle:active {
+  border: 8px solid #345DBB;
+  border: 8px solid rgba(53,93,187,0.38);
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  left: -14px;
+  top: -14px;
+}*/
+
+
+.player-isfull {
+    width: 100%;
+    height: 100%;
+    margin: auto;
+    border: 1px solid #000;
+    position: relative;
+}
+
+.player-media-isfull {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid #000;
+}
+
+.fa {
+    color: #FFFFFF;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s
+}
+.fade-enter, .fade-leave-active {
+  opacity: 0
+}
+</style>
+
+</html>
