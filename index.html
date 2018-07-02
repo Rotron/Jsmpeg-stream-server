@@ -3,52 +3,34 @@
 
 <head>
     <title>JSMplayer</title>
-    <script type="text/javascript" src="jsmpeg.min.js"></script>
-    <script src="node_modules/vue/dist/vue.js"></script>
-    <script type="text/javascript" src="node_modules/screenfull/dist/screenfull.js"></script>
-    <script src="node_modules/nouislider/distribute/nouislider.min.js"></script>
     <link rel="stylesheet" type="text/css" href="node_modules/nouislider/distribute/nouislider.min.css">
     <link rel="stylesheet" href="font-awesome-4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="font-awesome-3.2.1/css/font-awesome.min.css" />
-		<link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css"/>
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css"/>
     <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css"/>
-		<script src="//unpkg.com/babel-polyfill@latest/dist/polyfill.min.js"></script>
+
+    <script type="text/javascript" src="node_modules/vue/dist/vue.js"></script>
+    <script type="text/javascript" src="node_modules/screenfull/dist/screenfull.js"></script>
+    <script type="text/javascript" src="node_modules/nouislider/distribute/nouislider.min.js"></script>
+    <script type="text/javascript" src="jsmpeg.min.js"></script>
+    <script src="//unpkg.com/babel-polyfill@latest/dist/polyfill.min.js"></script>
     <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+    <script src="jsmplayer.js"></script>
 </head>
 
 <body>
     <div id="main">
-			<b-container class="bv-example-row">
+      <b-container class="bv-example-row">
        <b-table hover :fields="tablefields" :items="allStreamClient">
-			   <template slot="jsmplayer" slot-scope="data">
+         <template slot="jsmplayer" slot-scope="data">
            {{data.index + 1}}
-            <div :class="{'player': !isFullscreen, 'player-isfull': isFullscreen}" id="JSMplayer" @mouseover="onMouseShow" @mouseleave="onMouseHide">
-                <canvas :id='"video-canvas-" + data.index' :class="{'player-media': !isFullscreen, 'player-media-isfull': isFullscreen}" @click="clickActive">
-                </canvas>
-                <transition name="fade">
-                    <div class="player-UI" v-show="showUI && !isIdle">
-                        <i :class="{'fa fa-pause fa-2x': playing, 'fa fa-play fa-2x': !playing}" @click="togglePlay"></i>
-                        <i :class="{'fa fa-volume-up fa-2x': !isMute, 'fa fa-volume-off fa-2x': isMute}" @click="toggleVolume"></i>
-                        <div id="slider"></div>
-                        <i @click="screenFull" class="fa icon-fullscreen fa-2x"></i>
-                    </div>
-                </transition>
-            </div>
          </template>
-			 </b-table>
+       </b-table>
      </b-container>
-        <div :class="{'player': !isFullscreen, 'player-isfull': isFullscreen}" id="JSMplayer" @mouseover="onMouseShow" @mouseleave="onMouseHide">
-            <canvas id="video-canvas" :class="{'player-media': !isFullscreen, 'player-media-isfull': isFullscreen}" @click="clickActive">
-            </canvas>
-            <transition name="fade">
-                <div class="player-UI" v-show="showUI && !isIdle">
-                    <i :class="{'fa fa-pause fa-2x': playing, 'fa fa-play fa-2x': !playing}" @click="togglePlay"></i>
-                    <i :class="{'fa fa-volume-up fa-2x': !isMute, 'fa fa-volume-off fa-2x': isMute}" @click="toggleVolume"></i>
-                    <div id="slider"></div>
-                    <i @click="screenFull" class="fa icon-fullscreen fa-2x"></i>
-                </div>
-            </transition>
-        </div>
+        <Jsmplayer v-for="(client, index) in allStreamClient" 
+				:client="client" 
+				:index="index">
+				</Jsmplayer>
     </div>
 </body>
 
@@ -56,159 +38,31 @@
 var vue = new Vue({
     el: '#main',
     data: {
-        slider: {
-            start: 2,
-            min: 0,
-            max: 10,
-            connect: [true, false]
-        },
-        playing: false,
-        showUI: true,
-        isFullscreen: false,
-        isMute: false,
-        isIdle: false,
-				allStreamClient: [],
-				tablefields: ["srcAddr", "streamUrl", "appName", "streamName", "jsmplayer"],
-				timeoutID: ""
+        allStreamClient: [],
+        tablefields: ["srcAddr", "streamUrl", "appName", "streamName", "jsmplayer"],
     },
     mounted() {
-      var ws = new WebSocket('ws://' + document.location.hostname + ':8082');
-      ws.onopen = function() {
-				ws.send({ eventName: "allstreamClient", eventMsg: "" });
-          console.log('open')
-      }
-      ws.onmessage = function(event) {
-      	if (typeof event.data == "string") {
-					var data = JSON.parse(event.data)
-					console.log(data)
-					if (data.eventName == "allstreamClient") {
-						console.log(data.eventMsg)
-						vue.$data.allStreamClient = data.eventMsg
-						console.log(vue.$data.allStreamClient)
-					}
-      	}
-      }
-        var isMac = navigator.userAgent.indexOf('Mac') >= 0;
-        if (isMac) {
-            this.jsmegInstant()
-        } else {
-            console.log("Yor are not mac user!")
-            this.jsmegInstant()
-        };
-
-        player.pause();
-        screenfull.onchange(function() {
-            vue.$data.isFullscreen = !vue.$data.isFullscreen;
-        });
-
-        this.setup();
+     var ws = new WebSocket('ws://' + document.location.hostname + ':8082/app');
+     ws.onopen = function() {
+       ws.send({ eventName: "allstreamClient", eventMsg: "" });
+         console.log('open')
+     }
+     ws.onmessage = function(event) {
+       if (typeof event.data == "string") {
+         var data = JSON.parse(event.data)
+         console.log(data)
+         if (data.eventName == "allstreamClient") {
+           console.log(data.eventMsg)
+           vue.$data.allStreamClient = data.eventMsg
+           console.log(vue.$data.allStreamClient)
+         }
+       }
+     }
     },
 
 
     methods: {
-				setup () {
-            this.$el.addEventListener("mousemove", this.resetTimer, false);
-            this.$el.addEventListener("mousedown", this.resetTimer, false);
-            this.$el.addEventListener("keypress", this.resetTimer, false);
-            this.$el.addEventListener("DOMMouseScroll", this.resetTimer, false);
-            this.$el.addEventListener("mousewheel", this.resetTimer, false);
-            this.$el.addEventListener("touchmove", this.resetTimer, false);
-            this.$el.addEventListener("MSPointerMove", this.resetTimer, false);
-
-            this.startTimer();
-				},
-				startTimer() {
-            this.timeoutID = window.setTimeout(this.goInactive, 3000);
-				},
-				resetTimer(e) {
-            window.clearTimeout(this.timeoutID);
-            this.goActive();
-				},
-				goActive() {
-            vue.$data.isIdle = false;
-            this.startTimer();
-				},
-				goInactive() {
-            vue.$data.isIdle = true;
-				},
-        jsmegInstant() {
-            var canvas = document.getElementById('video-canvas');
-            var url = 'ws://' + document.location.hostname + ':8082/myapp/mystream';
-            player = new JSMpeg.Player(url, {
-                canvas: canvas
-            });
-
-            var Slider = document.getElementById('slider');
-
-            noUiSlider.create(Slider, {
-                start: this.slider.start,
-                connect: [this.slider.connect[0], this.slider.connect[1]],
-                range: {
-                    'min': this.slider.min,
-                    'max': this.slider.max
-                }
-            });
-            Slider.noUiSlider.on('slide', function(values, handle) {
-                player.setVolume(values[handle]);
-                if (values[handle] > 0) {
-                    vue.$data.isMute = false;
-                } else {
-                    vue.$data.isMute = true;
-                }
-            });
-        },
-
-        togglePlay() {
-            if (!player.isPlaying) {
-                player.play();
-                this.playing = true
-          player.audioOut.unlock(function() {
-          //  alert("unlock IPHONE audio");
-          });
-            } else {
-                player.pause();
-                this.playing = false
-            }
-        },
-        toggleVolume() {
-            const currentVolume = slider.noUiSlider.get()
-            this.isMute = !this.isMute;
-            if (currentVolume != 0) {
-                slider.noUiSlider.set(0)
-            } else {
-                slider.noUiSlider.set(4)
-            }
-        },
-        onMouseShow() {
-            if (!this.isFullscreen) {
-                this.showUI = true;
-            }
-        },
-        onMouseHide() {
-            this.showUI = false;
-        },
-        screenFull() {
-            if (screenfull.enabled) {
-                screenfull.toggle(document.getElementById('JSMplayer'));
-            } else {
-                alert("Your browser not support fullscreen")
-            }
-        },
-        clickActive() {
-            if (this.showUI) {
-                this.togglePlay();
-            }
-            if (this.isFullscreen) {
-                this.showUI = true;
-            }
-
-        }
     },
-	  sockets: {
-		  connect: function() {
-			  console.log('socket connect')
-			}
-		}
 
 });
 </script>
