@@ -22,15 +22,24 @@
     <div id="main">
       <b-container class="bv-example-row">
        <b-table hover :fields="tablefields" :items="allStreamClient">
-         <template slot="jsmplayer" slot-scope="data">
-           {{data.index + 1}}
+         <template slot="jsmplayer" slot-scope="row">
+           <b-button size="sm" @click.stop="playerToggle(row)" class="mr-2"> show player</b-button>
+         </template>
+         <template slot="row-details" slot-scope="row">
+          <Jsmplayer 
+				    :client="row.item" 
+				    :index="row.index">
+				  </Jsmplayer>
          </template>
        </b-table>
      </b-container>
-        <Jsmplayer v-for="(client, index) in allStreamClient" 
-				:client="client" 
-				:index="index">
+     <!--
+        <Jsmplayer 
+          v-for="(client, index) in allStreamClient" 
+				  :client="client" 
+				  :index="index">
 				</Jsmplayer>
+     -->
     </div>
 </body>
 
@@ -53,17 +62,26 @@ var vue = new Vue({
          console.log(data)
          if (data.eventName == "allstreamClient") {
            console.log(data.eventMsg)
+           //data.eventMsg.forEach((e, i, a) => {
+           //  a[i].isadminPlaying = false 
+           //})
            vue.$data.allStreamClient = data.eventMsg
            console.log(vue.$data.allStreamClient)
          }
        }
      }
     },
-
-
     methods: {
-    },
-
+      playerToggle(row) {
+        if (!row.detailsShowing) {
+          console.log('row not open, opening')
+          row.toggleDetails()
+        } else {
+          console.log('row is open, closing')
+          row.toggleDetails()
+        }
+      }
+    }
 });
 </script>
 
@@ -112,7 +130,7 @@ body {
     color: #A9A9A9;
 }
 
-#slider {
+.slider {
     width: 300px;
     height: 10px;
     border-radius: 15px;

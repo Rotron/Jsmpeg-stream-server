@@ -1,7 +1,7 @@
 Vue.component('Jsmplayer', {
-
     data() {
-      return {
+      return { 	
+        Slider: null,
 				slider: {
           start: 2,
           min: 0,
@@ -20,7 +20,6 @@ Vue.component('Jsmplayer', {
     props: ['client', 'index'],
 
     template: 
-        //`<div :class="{'player': !isFullscreen, 'player-isfull': isFullscreen}" :id="'JSMplayer-' + index" @mouseover="onMouseShow" @mouseleave="onMouseHide">
         `<div :class="{'player': !isFullscreen, 'player-isfull': isFullscreen}" @mouseover="onMouseShow" @mouseleave="onMouseHide">
             <canvas :id="'video-canvas-' + this.index" :class="{'player-media': !isFullscreen, 'player-media-isfull': isFullscreen}" @click="clickActive">
             </canvas>
@@ -28,7 +27,7 @@ Vue.component('Jsmplayer', {
                 <div class="player-UI" v-show="showUI && !isIdle">
                     <i :class="{'fa fa-pause fa-2x': playing, 'fa fa-play fa-2x': !playing}" @click="togglePlay"></i>
                     <i :class="{'fa fa-volume-up fa-2x': !isMute, 'fa fa-volume-off fa-2x': isMute}" @click="toggleVolume"></i>
-                    <div :id="'slider-' + this.index"></div>
+                    <div class="slider" :id="'slider-' + this.index"></div>
                     <i @click="screenFull" class="fa icon-fullscreen fa-2x"></i>
                 </div>
             </transition>
@@ -53,9 +52,9 @@ Vue.component('Jsmplayer', {
              canvas: this.canvas
          });
 
-         var Slider = document.getElementById('slider-' + this.index);
+         this.Slider = document.getElementById('slider-' + this.index);
 
-         noUiSlider.create(Slider, {
+         noUiSlider.create(this.Slider, {
              start: this.slider.start,
              connect: [this.slider.connect[0], this.slider.connect[1]],
              range: {
@@ -63,7 +62,7 @@ Vue.component('Jsmplayer', {
                  'max': this.slider.max
              }
          });
-         Slider.noUiSlider.on('slide', function(values, handle) {
+         this.Slider.noUiSlider.on('slide', function(values, handle) {
              player.setVolume(values[handle]);
              if (values[handle] > 0) {
                  self.isMute = false;
@@ -85,12 +84,12 @@ Vue.component('Jsmplayer', {
         }
       },
       toggleVolume() {
-          const currentVolume = slider.noUiSlider.get()
+          const currentVolume = this.Slider.noUiSlider.get()
           this.isMute = !this.isMute;
           if (currentVolume != 0) {
-              slider.noUiSlider.set(0)
+              this.Slider.noUiSlider.set(0)
           } else {
-              slider.noUiSlider.set(4)
+              this.Slider.noUiSlider.set(4)
           }
       },
       onMouseShow() {
@@ -99,7 +98,7 @@ Vue.component('Jsmplayer', {
           }
       },
       onMouseHide() {
-          this.showUI = false;
+          //this.showUI = false;
       },
       screenFull() {
           if (screenfull.enabled) {
@@ -126,7 +125,7 @@ Vue.component('Jsmplayer', {
         this.$el.addEventListener("touchmove", this.resetTimer, false);
         this.$el.addEventListener("MSPointerMove", this.resetTimer, false);
 
-        this.startTimer();
+        //this.startTimer();
       },
 			startTimer() {
         this.timeoutID = window.setTimeout(this.goInactive, 3000);
@@ -141,23 +140,22 @@ Vue.component('Jsmplayer', {
         this.startTimer();
 			},
 			goInactive() {
-        this.isIdle = true;
+        //this.isIdle = true;
+        this.isIdle = false;
 			}
     },
 		computed: {
 	    canvas() {
-				//var canvas = document.getElementById('video-canvas')
-				//var canvas = document.getElementsByTagName('canvas-' + this.index)[0]
 				var canvas = document.getElementById('video-canvas-' + this.index)
 				return canvas
 			},
 			url() {
-		    var url = 'ws://' + document.location.hostname + ':8082/'	
+		    var url = 'ws://' + document.location.hostname + ':8082' + this.client.streamUrl	
 				return url
 			},
 			//Slider() {
-			//	var Slider = document.getElementById('slider')
-			//	return Slider
+      //  var Slider = document.getElementById('slider-' + this.index);
+			//  return Slider
 			//}
 		}
 })
